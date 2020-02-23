@@ -103,7 +103,6 @@ public class BookResource {
         bookRepository.delete(id)
                 .thenApply(DeleteResult::wasAcknowledged)
                 .exceptionally(throwable -> {
-                    String e = throwable.getMessage();
                     return false;
                 })
                 .whenComplete((ack, throwable) -> {
