@@ -1,5 +1,7 @@
 package org.lvelez.book;
 
+import com.mongodb.client.result.UpdateResult;
+
 import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.ws.rs.*;
@@ -70,6 +72,23 @@ public class BookResource {
                 })
                 .whenComplete((response, throwable) -> {
                     future.complete(response);
+                });
+
+        return future;
+    }
+
+    @PUT
+    public CompletionStage<Boolean> update(@Valid Book book) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+
+        bookRepository.update(book.getIsbn(), book)
+                .thenApply(UpdateResult::wasAcknowledged)
+                .exceptionally(throwable -> {
+                    String e = throwable.getMessage();
+                    return false;
+                })
+                .whenComplete((ack, throwable) -> {
+                    future.complete(ack);
                 });
 
         return future;

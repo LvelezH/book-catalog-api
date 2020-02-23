@@ -2,6 +2,7 @@ package org.lvelez.book;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.mongodb.client.result.UpdateResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,8 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -26,6 +26,9 @@ import static org.mockito.Mockito.when;
 public class BookResourceTest {
     @Mock
     BookRepository repository;
+
+    @Mock
+    UpdateResult updateResult;
 
     @InjectMocks
     BookResource resource;
@@ -88,10 +91,24 @@ public class BookResourceTest {
     }
 
     @Test
-    public void shouldReturn500IxExceptionIsThrownInRepositoryWhenAddingABook() throws ExecutionException, InterruptedException {
+    public void shouldReturn500IfExceptionIsThrownInRepositoryWhenAddingABook() throws ExecutionException, InterruptedException {
         givenRepositoryThrowsExceptionWhenAddingABook();
         CompletionStage<Response> response =  whenAddingABook();
         thenTheErrorResponseIsCorrect(response);
+    }
+
+    @Test
+    public void shouldUpdateABookCorrectly() throws ExecutionException, InterruptedException {
+        givenABookInTheDatabaseForUpdating();
+        CompletionStage<Boolean> response = whenUpdatingTheBook();
+        thenTheBookIsUpdated(response);
+    }
+
+    @Test
+    public void shouldReturnFalseIfExceptionIsThrownInRepositoryWhenUpdatingABook() throws ExecutionException, InterruptedException {
+        givenRepositoryThrowsExceptionWhenUpdatingABook();
+        CompletionStage<Boolean> response = whenUpdatingTheBook();
+        thenTheBookIsNotUpdated(response);
     }
 
     private void givenaRepository() {
@@ -100,15 +117,20 @@ public class BookResourceTest {
         when(repository.add(sampleBook)).thenReturn(future);
     }
 
-    private CompletionStage<Response> whenAddingABook() {
-        return resource.add(sampleBook);
-    }
-
     private void givenABookInTheDatabase() {
         CompletableFuture<Optional<Book>> future = new CompletableFuture<>();
         future.complete(Optional.of(sampleBook));
 
         when(repository.findById(sampleBook.getIsbn())).thenReturn(future);
+    }
+
+    private void givenABookInTheDatabaseForUpdating() {
+        CompletableFuture<UpdateResult> future = new CompletableFuture<>();
+        when(updateResult.wasAcknowledged()).thenReturn(true);
+
+        future.complete(updateResult);
+
+        when(repository.update(any(), any())).thenReturn(future);
     }
 
     private void givenABookIsNotTheDatabase() {
@@ -143,12 +165,30 @@ public class BookResourceTest {
         when(repository.add(any())).thenReturn(future);
     }
 
+    private void givenRepositoryThrowsExceptionWhenUpdatingABook() {
+        CompletableFuture<UpdateResult> future = new CompletableFuture<>();
+        future.completeExceptionally(new RuntimeException());
+        when(repository.update(any(), any())).thenReturn(future);
+    }
+
     private CompletionStage<Response> whenGettingTheListOfBooks() {
         return resource.list();
     }
 
     private CompletionStage<Response> whenGettingTheBook(String id) {
         return resource.findById(id);
+    }
+
+    private CompletionStage<Response> whenAddingABook() {
+        return resource.add(sampleBook);
+    }
+
+    private CompletionStage<Boolean> whenUpdatingTheBook() {
+        Book updated = sampleBook;
+        updated.setAuthor("Updated author");
+        updated.setGenre(BookGenre.BIOGRAPHY);
+
+        return resource.update(updated);
     }
 
     private void thenBooksRetrievedAreCorrect(CompletionStage<Response> response) throws ExecutionException, InterruptedException {
@@ -180,5 +220,15 @@ public class BookResourceTest {
         Response resp = response.toCompletableFuture().get();
         assertEquals(201, resp.getStatus());
         assertEquals(sampleBook.getIsbn(),  resp.getEntity().toString());
+    }
+
+    private void thenTheBookIsUpdated(CompletionStage<Boolean> response) throws ExecutionException, InterruptedException {
+        Boolean resp = response.toCompletableFuture().get();
+        assertTrue(resp);
+    }
+
+    private void thenTheBookIsNotUpdated(CompletionStage<Boolean> response) throws ExecutionException, InterruptedException {
+        Boolean resp = response.toCompletableFuture().get();
+        assertFalse(resp);
     }
 }
