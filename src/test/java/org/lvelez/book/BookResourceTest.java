@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -79,6 +80,30 @@ public class BookResourceTest {
         thenTheErrorResponseIsCorrect(response);
     }
 
+    @Test
+    public void shouldAddABookForValidBook() throws ExecutionException, InterruptedException {
+        givenaRepository();
+        CompletionStage<Response> response =  whenAddingABook();
+        thenBookIsAddedCorrectly(response);
+    }
+
+    @Test
+    public void shouldReturn500IxExceptionIsThrownInRepositoryWhenAddingABook() throws ExecutionException, InterruptedException {
+        givenRepositoryThrowsExceptionWhenAddingABook();
+        CompletionStage<Response> response =  whenAddingABook();
+        thenTheErrorResponseIsCorrect(response);
+    }
+
+    private void givenaRepository() {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        future.complete(null);
+        when(repository.add(sampleBook)).thenReturn(future);
+    }
+
+    private CompletionStage<Response> whenAddingABook() {
+        return resource.add(sampleBook);
+    }
+
     private void givenABookInTheDatabase() {
         CompletableFuture<Optional<Book>> future = new CompletableFuture<>();
         future.complete(Optional.of(sampleBook));
@@ -110,6 +135,12 @@ public class BookResourceTest {
         CompletableFuture<Optional<Book>> future = new CompletableFuture<>();
         future.completeExceptionally(new RuntimeException());
         when(repository.findById(anyString())).thenReturn(future);
+    }
+
+    private void givenRepositoryThrowsExceptionWhenAddingABook() {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        future.completeExceptionally(new RuntimeException());
+        when(repository.add(any())).thenReturn(future);
     }
 
     private CompletionStage<Response> whenGettingTheListOfBooks() {
@@ -145,4 +176,9 @@ public class BookResourceTest {
         assertNull(resp.getEntity());
     }
 
+    private void thenBookIsAddedCorrectly(CompletionStage<Response> response) throws ExecutionException, InterruptedException {
+        Response resp = response.toCompletableFuture().get();
+        assertEquals(201, resp.getStatus());
+        assertEquals(sampleBook.getIsbn(),  resp.getEntity().toString());
+    }
 }

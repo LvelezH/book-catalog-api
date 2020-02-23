@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Data
@@ -13,13 +13,13 @@ import javax.validation.constraints.NotNull;
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 public class Book {
-    @NotEmpty
+    @NotBlank
     private String isbn;
-    @NotEmpty
+    @NotBlank
     private String name;
     @NotNull
     private BookGenre genre;
-    @NotEmpty
+    @NotBlank
     private String author;
     private String description;
     private String language;

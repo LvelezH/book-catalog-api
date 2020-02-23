@@ -1,6 +1,7 @@
 package org.lvelez.book;
 
 import javax.inject.Inject;
+import javax.validation.Valid;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -45,6 +46,24 @@ public class BookResource {
                     } else {
                         return Response.ok().status(204).build();
                     }
+                })
+                .exceptionally(throwable -> {
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+                })
+                .whenComplete((response, throwable) -> {
+                    future.complete(response);
+                });
+
+        return future;
+    }
+
+    @POST
+    public CompletionStage<Response> add(@Valid Book book) {
+        CompletableFuture<Response> future = new CompletableFuture<>();
+
+        bookRepository.add(book)
+                .thenApply(data -> {
+                    return Response.ok(book.getIsbn()).status(201).build();
                 })
                 .exceptionally(throwable -> {
                     return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
