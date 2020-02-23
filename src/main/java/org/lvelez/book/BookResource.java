@@ -1,10 +1,7 @@
 package org.lvelez.book;
 
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -28,6 +25,29 @@ public class BookResource {
                 })
                 .exceptionally(throwable -> {
                         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+                })
+                .whenComplete((response, throwable) -> {
+                    future.complete(response);
+                });
+
+        return future;
+    }
+
+    @GET
+    @Path("/{id}")
+    public CompletionStage<Response> findById (@PathParam("id") String id) {
+        CompletableFuture<Response> future = new CompletableFuture<>();
+
+        bookRepository.findById(id)
+                .thenApply(book -> {
+                    if (book.isPresent()) {
+                        return Response.ok(book).build();
+                    } else {
+                        return Response.ok().status(204).build();
+                    }
+                })
+                .exceptionally(throwable -> {
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
                 })
                 .whenComplete((response, throwable) -> {
                     future.complete(response);
