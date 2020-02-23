@@ -1,5 +1,6 @@
 package org.lvelez.book;
 
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 
 import javax.inject.Inject;
@@ -83,6 +84,24 @@ public class BookResource {
 
         bookRepository.update(book.getIsbn(), book)
                 .thenApply(UpdateResult::wasAcknowledged)
+                .exceptionally(throwable -> {
+                    String e = throwable.getMessage();
+                    return false;
+                })
+                .whenComplete((ack, throwable) -> {
+                    future.complete(ack);
+                });
+
+        return future;
+    }
+
+    @DELETE
+    @Path("/{id}")
+    public CompletionStage<Boolean> delete (@PathParam("id") String id) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+
+        bookRepository.delete(id)
+                .thenApply(DeleteResult::wasAcknowledged)
                 .exceptionally(throwable -> {
                     String e = throwable.getMessage();
                     return false;

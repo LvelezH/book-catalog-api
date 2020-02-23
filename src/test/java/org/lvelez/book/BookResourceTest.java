@@ -2,6 +2,7 @@ package org.lvelez.book;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,9 @@ public class BookResourceTest {
 
     @Mock
     UpdateResult updateResult;
+
+    @Mock
+    DeleteResult deleteResult;
 
     @InjectMocks
     BookResource resource;
@@ -101,16 +105,30 @@ public class BookResourceTest {
     public void shouldUpdateABookCorrectly() throws ExecutionException, InterruptedException {
         givenABookInTheDatabaseForUpdating();
         CompletionStage<Boolean> response = whenUpdatingTheBook();
-        thenTheBookIsUpdated(response);
+        thenTheDatabaseIsUpdated(response);
     }
 
     @Test
     public void shouldReturnFalseIfExceptionIsThrownInRepositoryWhenUpdatingABook() throws ExecutionException, InterruptedException {
         givenRepositoryThrowsExceptionWhenUpdatingABook();
         CompletionStage<Boolean> response = whenUpdatingTheBook();
-        thenTheBookIsNotUpdated(response);
+        thenTheDatabaseIsNotUpdated(response);
     }
 
+    @Test
+    public void shouldDeleteABookCorrectly() throws ExecutionException, InterruptedException {
+        givenABookInTheDatabaseForDeleting();
+        CompletionStage<Boolean> response = whenDeletingTheBook();
+        thenTheDatabaseIsUpdated(response);
+    }
+
+
+    @Test
+    public void shouldReturnFalseIfExceptionIsThrownInRepositoryWhenDeletingABook() throws ExecutionException, InterruptedException {
+        givenRepositoryThrowsExceptionWhenDeletingABook();
+        CompletionStage<Boolean> response = whenDeletingTheBook();
+        thenTheDatabaseIsNotUpdated(response);
+    }
     private void givenaRepository() {
         CompletableFuture<Void> future = new CompletableFuture<>();
         future.complete(null);
@@ -131,6 +149,15 @@ public class BookResourceTest {
         future.complete(updateResult);
 
         when(repository.update(any(), any())).thenReturn(future);
+    }
+
+    private void givenABookInTheDatabaseForDeleting() {
+        CompletableFuture<DeleteResult> future = new CompletableFuture<>();
+        when(deleteResult.wasAcknowledged()).thenReturn(true);
+
+        future.complete(deleteResult);
+
+        when(repository.delete(any())).thenReturn(future);
     }
 
     private void givenABookIsNotTheDatabase() {
@@ -171,6 +198,12 @@ public class BookResourceTest {
         when(repository.update(any(), any())).thenReturn(future);
     }
 
+    private void givenRepositoryThrowsExceptionWhenDeletingABook() {
+        CompletableFuture<DeleteResult> future = new CompletableFuture<>();
+        future.completeExceptionally(new RuntimeException());
+        when(repository.delete(any())).thenReturn(future);
+    }
+
     private CompletionStage<Response> whenGettingTheListOfBooks() {
         return resource.list();
     }
@@ -189,6 +222,10 @@ public class BookResourceTest {
         updated.setGenre(BookGenre.BIOGRAPHY);
 
         return resource.update(updated);
+    }
+
+    private CompletionStage<Boolean> whenDeletingTheBook() {
+        return resource.delete(sampleBook.getIsbn());
     }
 
     private void thenBooksRetrievedAreCorrect(CompletionStage<Response> response) throws ExecutionException, InterruptedException {
@@ -222,12 +259,12 @@ public class BookResourceTest {
         assertEquals(sampleBook.getIsbn(),  resp.getEntity().toString());
     }
 
-    private void thenTheBookIsUpdated(CompletionStage<Boolean> response) throws ExecutionException, InterruptedException {
+    private void thenTheDatabaseIsUpdated(CompletionStage<Boolean> response) throws ExecutionException, InterruptedException {
         Boolean resp = response.toCompletableFuture().get();
         assertTrue(resp);
     }
 
-    private void thenTheBookIsNotUpdated(CompletionStage<Boolean> response) throws ExecutionException, InterruptedException {
+    private void thenTheDatabaseIsNotUpdated(CompletionStage<Boolean> response) throws ExecutionException, InterruptedException {
         Boolean resp = response.toCompletableFuture().get();
         assertFalse(resp);
     }
