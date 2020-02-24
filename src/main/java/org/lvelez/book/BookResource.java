@@ -2,6 +2,10 @@ package org.lvelez.book;
 
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import websockets.BookEventSocket;
 
 import javax.inject.Inject;
 import javax.validation.Valid;
@@ -16,8 +20,13 @@ import java.util.concurrent.CompletionStage;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class BookResource {
+    private static final Logger logger = LogManager.getLogger(BookResource.class);
+
     @Inject
     BookRepository bookRepository;
+
+    @Inject
+    BookEventSocket bookEventSocket;
 
     @GET
     public CompletionStage<Response> list() {
@@ -28,7 +37,8 @@ public class BookResource {
                     return Response.ok(books).build();
                 })
                 .exceptionally(throwable -> {
-                        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+                    logger.log(Level.ERROR, "There was an error getting list of books. Error was: "+ throwable.getMessage());
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
                 })
                 .whenComplete((response, throwable) -> {
                     future.complete(response);
@@ -51,6 +61,7 @@ public class BookResource {
                     }
                 })
                 .exceptionally(throwable -> {
+                    logger.log(Level.ERROR, "There was an error finding book with ISBN " + id + "Error was: "+ throwable.getMessage());
                     return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
                 })
                 .whenComplete((response, throwable) -> {
@@ -69,9 +80,14 @@ public class BookResource {
                     return Response.ok(book.getIsbn()).status(201).build();
                 })
                 .exceptionally(throwable -> {
+                    logger.log(Level.ERROR, "There was an error trying to add book " + book.getName() +
+                            "Error was: "+ throwable.getMessage());
                     return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
                 })
                 .whenComplete((response, throwable) -> {
+                    if (response.getStatus() == 201) {
+                        bookEventSocket.broadcast("Book added : " + book.getName());
+                    }
                     future.complete(response);
                 });
 
@@ -85,10 +101,14 @@ public class BookResource {
         bookRepository.update(book.getIsbn(), book)
                 .thenApply(UpdateResult::wasAcknowledged)
                 .exceptionally(throwable -> {
-                    String e = throwable.getMessage();
+                    logger.log(Level.ERROR, "There was an error trying to update book " + book.getName() +
+                            "Error was: "+ throwable.getMessage());
                     return false;
                 })
                 .whenComplete((ack, throwable) -> {
+                    if (ack) {
+                        bookEventSocket.broadcast("Book updated : " + book.getName());
+                    }
                     future.complete(ack);
                 });
 
@@ -103,9 +123,14 @@ public class BookResource {
         bookRepository.delete(id)
                 .thenApply(DeleteResult::wasAcknowledged)
                 .exceptionally(throwable -> {
+                    logger.log(Level.ERROR, "There was an error trying to delete book with ISBN " +id +
+                            "Error was: "+ throwable.getMessage());
                     return false;
                 })
                 .whenComplete((ack, throwable) -> {
+                    if (ack) {
+                        bookEventSocket.broadcast("Book deleted, isbn : " +id);
+                    }
                     future.complete(ack);
                 });
 

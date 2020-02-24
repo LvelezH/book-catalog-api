@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import websockets.BookEventSocket;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -21,7 +22,7 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class BookResourceTest {
@@ -33,6 +34,9 @@ public class BookResourceTest {
 
     @Mock
     DeleteResult deleteResult;
+
+    @Mock
+    BookEventSocket bookEventSocket;
 
     @InjectMocks
     BookResource resource;
@@ -92,6 +96,7 @@ public class BookResourceTest {
         givenaRepository();
         CompletionStage<Response> response =  whenAddingABook();
         thenBookIsAddedCorrectly(response);
+        thenANotificationIsSent();
     }
 
     @Test
@@ -99,6 +104,7 @@ public class BookResourceTest {
         givenRepositoryThrowsExceptionWhenAddingABook();
         CompletionStage<Response> response =  whenAddingABook();
         thenTheErrorResponseIsCorrect(response);
+        thenANotificationIsNotSent();
     }
 
     @Test
@@ -106,6 +112,7 @@ public class BookResourceTest {
         givenABookInTheDatabaseForUpdating();
         CompletionStage<Boolean> response = whenUpdatingTheBook();
         thenTheDatabaseIsUpdated(response);
+        thenANotificationIsSent();
     }
 
     @Test
@@ -113,6 +120,7 @@ public class BookResourceTest {
         givenRepositoryThrowsExceptionWhenUpdatingABook();
         CompletionStage<Boolean> response = whenUpdatingTheBook();
         thenTheDatabaseIsNotUpdated(response);
+        thenANotificationIsNotSent();
     }
 
     @Test
@@ -120,6 +128,7 @@ public class BookResourceTest {
         givenABookInTheDatabaseForDeleting();
         CompletionStage<Boolean> response = whenDeletingTheBook();
         thenTheDatabaseIsUpdated(response);
+        thenANotificationIsSent();
     }
 
 
@@ -128,6 +137,7 @@ public class BookResourceTest {
         givenRepositoryThrowsExceptionWhenDeletingABook();
         CompletionStage<Boolean> response = whenDeletingTheBook();
         thenTheDatabaseIsNotUpdated(response);
+        thenANotificationIsNotSent();
     }
     private void givenaRepository() {
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -267,5 +277,13 @@ public class BookResourceTest {
     private void thenTheDatabaseIsNotUpdated(CompletionStage<Boolean> response) throws ExecutionException, InterruptedException {
         Boolean resp = response.toCompletableFuture().get();
         assertFalse(resp);
+    }
+
+    private void thenANotificationIsSent() {
+        verify(bookEventSocket).broadcast(any());
+    }
+
+    private void thenANotificationIsNotSent() {
+        verify(bookEventSocket, never()).broadcast(any());
     }
 }

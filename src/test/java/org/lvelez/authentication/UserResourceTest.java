@@ -41,7 +41,7 @@ public class UserResourceTest {
     @Test
     public void shouldReturnFalseForInvalidLogin() throws ExecutionException, InterruptedException {
         givenUsersInTheDatabase();
-        CompletionStage<Boolean> response =  whenTheUserLogsInWithInvalidgUser();
+        CompletionStage<Boolean> response =  whenTheUserLogsInWithInvalidUser();
         thenTheLoginIsIncorrect(response);
     }
 
@@ -70,7 +70,7 @@ public class UserResourceTest {
         return resource.login(user);
     }
 
-    private CompletionStage<Boolean> whenTheUserLogsInWithInvalidgUser() {
+    private CompletionStage<Boolean> whenTheUserLogsInWithInvalidUser() {
         return resource.login(userRetrieved);
     }
 

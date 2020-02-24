@@ -1,6 +1,10 @@
 package authentication;
 
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import javax.inject.Inject;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
@@ -15,6 +19,7 @@ import java.util.concurrent.CompletionStage;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class UserResource {
+    private static final Logger logger = LogManager.getLogger(UserResource.class);
 
     @Inject
     UserRepository userRepository;
@@ -32,6 +37,8 @@ public class UserResource {
                     }
                 })
                 .exceptionally(throwable -> {
+                    logger.log(Level.WARN, "There was an error trying to log user " + user.getUsername()
+                            + "Error was: "+ throwable.getMessage());
                     return false;
                 })
                 .whenComplete((result, throwable) -> {
