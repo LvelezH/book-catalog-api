@@ -27,7 +27,6 @@ public class BookEventSocket {
 
     @OnClose
     public void onClose(Session session) {
-        broadcast("User left on error: ");
         sessions.remove(session);
     }
 
