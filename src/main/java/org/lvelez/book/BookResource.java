@@ -77,7 +77,7 @@ public class BookResource {
 
         bookRepository.add(book)
                 .thenApply(data -> {
-                    return Response.ok(book.getIsbn()).status(201).build();
+                    return Response.ok(book).status(201).build();
                 })
                 .exceptionally(throwable -> {
                     logger.log(Level.ERROR, "There was an error trying to add book " + book.getName() +
@@ -121,17 +121,21 @@ public class BookResource {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
         bookRepository.delete(id)
-                .thenApply(DeleteResult::wasAcknowledged)
+                .thenApply(DeleteResult::getDeletedCount)
                 .exceptionally(throwable -> {
                     logger.log(Level.ERROR, "There was an error trying to delete book with ISBN " +id +
                             "Error was: "+ throwable.getMessage());
-                    return false;
+                    return 0L;
                 })
                 .whenComplete((ack, throwable) -> {
-                    if (ack) {
+                    if(ack == 0L) {
+                        logger.log(Level.INFO, "Tried to delete a non existing book with ISBN " +id);
+                        bookEventSocket.broadcast("No book with id : " +id);
+                    } else {
                         bookEventSocket.broadcast("Book deleted, isbn : " +id);
                     }
-                    future.complete(ack);
+
+                    future.complete(ack != 0L);
                 });
 
         return future;
