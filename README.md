@@ -1,15 +1,15 @@
 # book-catalog-api project
 
 This API has been built with the Quarkus framework, after taking a look at some other like Spring with the objective of speeding up the initial
-development and environment set up. Reasons for choosing Quarkus over Spring wre:
+development and environment set up. Reasons for choosing Quarkus over Spring were:
 - Easy to configure and create a project
 - Lots of integration with reactive style programming tools
 - Faster start up time and smaller than Spring
-- Thought with containerization in mind, so it's easy to puto in a container and deploy in cloud
+- Thought with containerization in mind, so it's easy to put in a container and deploy in cloud
 
 The chosen Database was a MongoDB in the cloud, creating a free account and a cluster in MongoAtlas. This way there is no need to install and run an instance of MongoDB locally to test the application. 
 
-The API exposes 4 endpoints to create, update, retrieve and delete (CRUD) a catalog of books. These 4 endpoints are REST, using a reactivo mongo client and Java reactive streams to achieve a full non blocking API.
+The API exposes 4 endpoints to create, update, retrieve and delete (CRUD) a catalog of books. These 4 endpoints are REST, using a reactive mongo client and Java reactive streams to achieve a full non blocking API.
 
 ##REST endpoints
 #####POST /catalog/books
@@ -132,8 +132,16 @@ The requirements expected from this API were the following:
 
 To simulate the expecte performance, a load test was performed using Jmeter with the following configuration:
 
-![My image](readmeImages/jmeterConfig.png)
+![My image](readmeImages/jmeterconfig.png)
 
 And results were
 
 ![My image](readmeImages/jmeterResults.png)
+
+## How to run
+Application comes bundled with maven wrapper, to run just go to the root folder and run:
+
+```
+./mvnw compile quarkus:dev
+```
+And the API will be running in http://localhost:8080
