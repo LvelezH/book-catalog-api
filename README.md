@@ -127,3 +127,13 @@ It responds with a boolean with the log in status. If an exception is found, it 
 Apart from the REST endpoints, the server defines a websocket for connecting to the clients and broadcast notifications. 
 The web clients will subscribe to this websocket and will be notified in real time about any changes done in the book catalog.
 
+##Non functional requirements
+The requirements expected from this API were the following:
+
+To simulate the expecte performance, a load test was performed using Jmeter with the following configuration:
+
+![My image](readmeImages/jmeterConfig.png)
+
+And results were
+
+![My image](readmeImages/jmeterResults.png)
